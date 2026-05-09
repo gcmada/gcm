@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails Tournoi - Great Chess Madagascar</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .details-container { max-width: 1000px; margin: 2rem auto; padding: 2rem; background: var(--gold-light); border-radius: 10px; border: 2px solid var(--gold); color: var(--dark-green); }
+        .sub-nav { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--gold); padding-bottom: 1rem; flex-wrap: wrap; }
+        .nav-item { padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; border: 1px solid var(--gold); background: var(--white); font-weight: bold; }
+        .nav-item.active { background: var(--dark-green); color: var(--gold); }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: var(--white); }
+        th, td { border: 1px solid var(--gold); padding: 0.8rem; text-align: left; }
+        th { background: var(--dark-green); color: var(--gold); }
+        .pairing-card { background: var(--white); padding: 1rem; border: 1px solid var(--gold); border-radius: 8px; margin-bottom: 0.5rem; display: grid; grid-template-columns: 50px 1fr 80px 1fr; align-items: center; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo-container">
+            <a href="index.html"><img src="logo.jpeg" alt="Logo"></a>
+        </div>
+        <h2 id="tourney-title" style="color: var(--gold);">Chargement...</h2>
+    </nav>
+
+    <main class="details-container">
+        <div id="dynamic-nav" class="sub-nav">
+            <div class="nav-item active" onclick="showSection('players-sec', this)">Liste des Joueurs</div>
+        </div>
+
+        <section id="players-sec" class="content-section">
+            <h3>Liste des Participants</h3>
+            <table>
+                <thead>
+                    <tr><th>Rang</th><th>Joueur</th><th>ELO</th><th>Points</th></tr>
+                </thead>
+                <tbody id="public-player-list"></tbody>
+            </table>
+        </section>
+
+        <section id="pairings-sec" class="content-section" style="display: none;">
+            <h3 id="pairings-title">Appariements</h3>
+            <div id="public-pairings-list"></div>
+        </section>
+
+        <section id="results-sec" class="content-section" style="display: none;">
+            <h3 id="results-title">Classement après Round</h3>
+            <table>
+                <thead>
+                    <tr><th>Rang</th><th>Joueur</th><th>ELO</th><th>Points</th></tr>
+                </thead>
+                <tbody id="public-results-list"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const tourneyId = parseInt(urlParams.get('id'));
+        let tournament = null;
+
+        function showSection(id, el) {
+            document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).style.display = 'block';
+            el.classList.add('active');
+        }
+
+        async function loadTournament() {
+            try {
+                const response = await fetch('data2.json');
+                const tournaments = await response.json();
+                tournament = tournaments.find(t => t.id === tourneyId);
+                
+                if (!tournament) { 
+                    window.location.href = 'index.html'; 
+                    return; 
+                }
+                
+                document.getElementById('tourney-title').innerText = tournament.name;
+                renderNav();
+                renderPlayers();
+            } catch (error) {
+                console.error("Erreur lors du chargement du tournoi:", error);
+            }
+        }
+
+        function renderNav() {
+            const nav = document.getElementById('dynamic-nav');
+            
+            if (tournament.pairings) {
+                tournament.pairings.forEach(r => {
+                    if (r.published) {
+                        const item = document.createElement('div');
+                        item.className = 'nav-item';
+                        item.innerText = `Round ${r.round}/${tournament.rounds}`;
+                        item.onclick = () => {
+                            showSection('pairings-sec', item);
+                            renderPairings(r.round);
+                        };
+                        nav.appendChild(item);
+
+                        if (r.finished) {
+                            const resItem = document.createElement('div');
+                            resItem.className = 'nav-item';
+                            resItem.innerText = `Résultat Round ${r.round}`;
+                            resItem.style.backgroundColor = "rgba(46, 125, 50, 0.1)";
+                            resItem.onclick = () => {
+                                showSection('results-sec', resItem);
+                                renderResults(r.round);
+                            };
+                            nav.appendChild(resItem);
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderPlayers() {
+            const list = document.getElementById('public-player-list');
+            list.innerHTML = '';
+            if (tournament.players) {
+                [...tournament.players].sort((a,b) => b.points - a.points || b.elo - a.elo).forEach((p, index) => {
+                    list.innerHTML += `<tr><td>${index + 1}</td><td>${p.firstName} ${p.lastName}</td><td>${p.elo}</td><td>${p.points}</td></tr>`;
+                });
+            }
+        }
+
+        function renderPairings(roundNum) {
+            const round = tournament.pairings.find(r => r.round === roundNum);
+            document.getElementById('pairings-title').innerText = `Appariements Round ${roundNum}`;
+            const container = document.getElementById('public-pairings-list');
+            container.innerHTML = '';
+
+            round.matches.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'pairing-card';
+                card.innerHTML = `
+                    <div style="font-weight: bold;">T.${m.table}</div>
+                    <div style="text-align: right;">${m.white.firstName} ${m.white.lastName} (${m.white.elo})</div>
+                    <div style="text-align: center; font-weight: bold; background: var(--gold-light); border-radius: 4px; padding: 0.2rem;">${m.result || 'VS'}</div>
+                    <div>${m.black.firstName} ${m.black.lastName} (${m.black.elo})</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderResults(roundNum) {
+            document.getElementById('results-title').innerText = `Classement après le Round ${roundNum}`;
+            const list = document.getElementById('public-results-list');
+            list.innerHTML = '';
+            
+            [...tournament.players].sort((a,b) => b.points - a.points || b.elo - a.elo).forEach((p, index) => {
+                list.innerHTML += `<tr><td>${index + 1}</td><td>${p.firstName} ${p.lastName}</td><td>${p.elo}</td><td>${p.points}</td></tr>`;
+            });
+        }
+
+        window.onload = loadTournament;
+    </script>
+
+    <footer>
+        <p>&copy; 2026 Great Chess Madagascar. Détails du tournoi.</p>
+    </footer>
+</body>
+</html>

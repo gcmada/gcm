@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Joueurs - Great Chess Madagascar</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .search-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+        
+        .search-container input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            background: var(--white);
+            color: var(--dark-green);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .player-info p {
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed rgba(212, 175, 55, 0.3);
+            padding-bottom: 0.3rem;
+        }
+
+        .player-info strong {
+            color: var(--dark-green);
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo-container">
+            <a href="index.html"><img src="logo.jpeg" alt="Great Chess Madagascar Logo"></a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Tournois</a></li>
+            <li><a href="liste.html" class="active">Joueurs</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="players">
+            <h3>Liste des Joueurs</h3>
+            
+            <div class="search-container" style="display: flex; gap: 1rem; align-items: center; justify-content: center; max-width: 700px; margin-left: auto; margin-right: auto;">
+                <input type="text" id="player-search" placeholder="Rechercher par nom ou prénom..." style="flex: 1; margin: 0;">
+                <button onclick="performSearch()" class="btn" style="white-space: nowrap;">Rechercher</button>
+            </div>
+
+            <p id="no-players" style="text-align: center; padding: 2rem; display: none; color: #c62828; font-weight: bold;"></p>
+
+            <div id="player-container" class="tournament-grid">
+                <!-- Les joueurs seront ajoutés ici dynamiquement -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let allPlayers = [];
+
+        async function init() {
+            try {
+                const response = await fetch('data1.json');
+                allPlayers = await response.json();
+            } catch (error) {
+                console.error("Erreur lors du chargement des joueurs:", error);
+            }
+        }
+
+        function loadPlayers(filter = '') {
+            const container = document.getElementById('player-container');
+            const emptyMsg = document.getElementById('no-players');
+            
+            const query = filter.trim().toLowerCase();
+
+            if (!query) {
+                container.innerHTML = '';
+                emptyMsg.style.display = 'none';
+                return;
+            }
+
+            const filteredPlayers = allPlayers.filter(p => 
+                p.lastName.toLowerCase().includes(query) ||
+                p.firstName.toLowerCase().includes(query)
+            );
+
+            container.innerHTML = '';
+
+            if (filteredPlayers.length > 0) {
+                emptyMsg.style.display = 'none';
+                
+                filteredPlayers.forEach(p => {
+                    const card = document.createElement('article');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-header">${p.firstName} ${p.lastName}</div>
+                        <div class="card-body">
+                            <div class="player-info">
+                                <p><strong>Pseudo Chess.com :</strong> <span>${p.pseudo}</span></p>
+                                <p><strong>ELO :</strong> <span>${p.elo}</span></p>
+                                <p><strong>Identifiant :</strong> <span>#${p.id}</span></p>
+                            </div>
+                            <div style="margin-top: 1rem; text-align: center;">
+                                <a href="https://www.chess.com/member/${p.pseudo}" target="_blank" class="btn" style="font-size: 0.9rem;">Voir Profil Chess.com</a>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } else {
+                emptyMsg.innerText = "Ce joueur n'existe pas dans notre base de données.";
+                emptyMsg.style.display = 'block';
+            }
+        }
+
+        function performSearch() {
+            const query = document.getElementById('player-search').value;
+            loadPlayers(query);
+        }
+
+        document.getElementById('player-search').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        window.onload = async () => {
+            await init();
+            loadPlayers();
+        };
+    </script>
+
+    <footer>
+        <p>&copy; 2026 Great Chess Madagascar. Tous droits réservés.</p>
+        <p>Contact : contact@greatchess.mg</p>
+    </footer>
+
+</body>
+</html>

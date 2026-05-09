@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modération Tournoi - Great Chess Madagascar</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .mod-container { max-width: 1000px; margin: 2rem auto; padding: 2rem; background: var(--gold-light); border-radius: 10px; border: 2px solid var(--gold); color: var(--dark-green); }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: var(--white); }
+        th, td { border: 1px solid var(--gold); padding: 0.8rem; text-align: left; }
+        th { background: var(--dark-green); color: var(--gold); }
+        .form-inline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; align-items: end; }
+        .tab-menu { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--gold); padding-bottom: 1rem; }
+        .tab-btn { padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; border: 1px solid var(--gold); background: var(--white); font-weight: bold; }
+        .tab-btn.active { background: var(--dark-green); color: var(--gold); }
+        .pairing-row { display: grid; grid-template-columns: 50px 1fr 100px 1fr; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid var(--gold); }
+        .result-select { padding: 0.5rem; border: 1px solid var(--gold); border-radius: 4px; width: 100%; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo-container">
+            <a href="admin.html"><img src="logo.jpeg" alt="Logo"></a>
+        </div>
+        <h2 id="tourney-title" style="color: var(--gold);">Chargement...</h2>
+    </nav>
+
+    <main class="mod-container">
+        <div style="background: #fff3cd; color: #856404; padding: 1rem; border-radius: 4px; border: 1px solid #ffeeba; margin-bottom: 2rem;">
+            <strong>Action requise :</strong> Après avoir enregistré des résultats ou généré des appariements, cliquez sur <strong>"Enregistrer data2.json"</strong> pour télécharger le fichier à uploader.
+            <button onclick="downloadTournaments()" class="btn" style="background: #856404; color: white; margin-top: 0.5rem; display: block;">Enregistrer data2.json (Tous les tournois)</button>
+        </div>
+
+        <div class="tab-menu">
+            <div class="tab-btn active" onclick="showTab('players-tab')">Joueurs</div>
+            <div class="tab-btn" onclick="showTab('pairings-tab')">Appariements & Résultats</div>
+        </div>
+
+        <!-- Players Section -->
+        <div id="players-tab" class="tab-content">
+            <h3>Inscrire un joueur</h3>
+            <form id="player-form" class="form-inline">
+                <div>
+                    <label>Identifiant (7 chiffres)</label>
+                    <input type="number" id="p-id" required placeholder="Ex: 1234567">
+                </div>
+                <button type="submit" class="btn">Inscrire</button>
+            </form>
+            <p id="player-msg" style="margin-top: 1rem;"></p>
+            <table id="player-table">
+                <thead><tr><th>Nom</th><th>Prénom</th><th>Pseudo</th><th>ELO</th><th>ID</th></tr></thead>
+                <tbody id="player-list"></tbody>
+            </table>
+        </div>
+
+        <!-- Pairings Section -->
+        <div id="pairings-tab" class="tab-content" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="current-round-title">Round 1</h3>
+                <div id="round-controls">
+                    <button onclick="generatePairings()" class="btn" id="gen-pairings-btn">Générer Appariements</button>
+                    <button onclick="publishPairings()" class="btn" id="publish-btn" style="display: none; background-color: var(--gold); color: var(--dark-green);">Publier</button>
+                    <button onclick="finishRound()" class="btn" id="finish-btn" style="display: none; background-color: #1b5e20; color: white;">Terminer le Round</button>
+                </div>
+            </div>
+            
+            <div id="pairings-list" style="margin-top: 2rem;">
+                <!-- Appariements ici -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const tourneyId = parseInt(urlParams.get('id'));
+        let tournament = null;
+        let allTournaments = [];
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        async function loadTournament() {
+            try {
+                const response = await fetch('data2.json');
+                allTournaments = await response.json();
+                tournament = allTournaments.find(t => t.id === tourneyId);
+                
+                if (!tournament) { window.location.href = 'admin.html'; return; }
+                
+                document.getElementById('tourney-title').innerText = tournament.name;
+                if (!tournament.players) tournament.players = [];
+                if (!tournament.pairings) tournament.pairings = [];
+                if (tournament.currentRound === undefined) tournament.currentRound = 0;
+                
+                renderPlayers();
+                renderPairings();
+                updateControls();
+            } catch (error) {
+                console.error("Erreur chargement tournoi:", error);
+            }
+        }
+
+        function downloadTournaments() {
+            const index = allTournaments.findIndex(t => t.id === tourneyId);
+            allTournaments[index] = tournament;
+            
+            const blob = new Blob([JSON.stringify(allTournaments, null, 4)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'data2.json';
+            link.click();
+        }
+
+        // Player Management
+        document.getElementById('player-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const pId = parseInt(document.getElementById('p-id').value);
+            
+            try {
+                const response = await fetch('data1.json');
+                const globalPlayers = await response.json();
+                const player = globalPlayers.find(p => p.id === pId);
+                const msg = document.getElementById('player-msg');
+
+                if (!player) {
+                    msg.innerText = "Joueur non trouvé.";
+                    msg.style.color = "red";
+                    return;
+                }
+
+                if (tournament.players.some(p => p.id === pId)) {
+                    msg.innerText = "Joueur déjà inscrit.";
+                    msg.style.color = "red";
+                    return;
+                }
+
+                tournament.players.push({
+                    ...player,
+                    points: 0,
+                    buchholz: 0,
+                    opponents: [],
+                    colors: []
+                });
+                
+                renderPlayers();
+                msg.innerText = `${player.firstName} ${player.lastName} inscrit !`;
+                msg.style.color = "green";
+                this.reset();
+            } catch (error) {
+                console.error("Erreur inscription joueur:", error);
+            }
+        };
+
+        function renderPlayers() {
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            tournament.players.sort((a,b) => b.elo - a.elo).forEach(p => {
+                list.innerHTML += `<tr><td>${p.lastName}</td><td>${p.firstName}</td><td>${p.pseudo}</td><td>${p.elo}</td><td>${p.id}</td></tr>`;
+            });
+        }
+
+        // --- Swiss System Pairing Logic ---
+        function generatePairings() {
+            if (tournament.players.length < 2) {
+                alert("Pas assez de joueurs.");
+                return;
+            }
+
+            tournament.currentRound++;
+            const roundPairings = [];
+            
+            const sortedPlayers = [...tournament.players].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.elo - a.elo;
+            });
+
+            const pairedIds = new Set();
+
+            for (let i = 0; i < sortedPlayers.length; i++) {
+                const p1 = sortedPlayers[i];
+                if (pairedIds.has(p1.id)) continue;
+
+                let found = false;
+                for (let j = i + 1; j < sortedPlayers.length; j++) {
+                    const p2 = sortedPlayers[j];
+                    if (pairedIds.has(p2.id)) continue;
+
+                    if (!p1.opponents.includes(p2.id)) {
+                        roundPairings.push({
+                            table: roundPairings.length + 1,
+                            white: p1,
+                            black: p2,
+                            result: null
+                        });
+                        pairedIds.add(p1.id);
+                        pairedIds.add(p2.id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    roundPairings.push({
+                        table: roundPairings.length + 1,
+                        white: p1,
+                        black: { id: null, firstName: "BYE", lastName: "", elo: 0 },
+                        result: '1-0'
+                    });
+                    pairedIds.add(p1.id);
+                }
+            }
+
+            tournament.pairings.push({
+                round: tournament.currentRound,
+                matches: roundPairings,
+                published: false,
+                finished: false
+            });
+
+            renderPairings();
+            updateControls();
+        }
+
+        function renderPairings() {
+            const container = document.getElementById('pairings-list');
+            const round = tournament.pairings.find(r => r.round === tournament.currentRound);
+            
+            if (!round) {
+                container.innerHTML = '<p>Aucun appariement généré pour ce round.</p>';
+                document.getElementById('current-round-title').innerText = `Round ${tournament.currentRound + 1} (À générer)`;
+                return;
+            }
+
+            document.getElementById('current-round-title').innerText = `Round ${round.round}`;
+            container.innerHTML = '';
+
+            round.matches.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'pairing-row';
+                div.innerHTML = `
+                    <div style="font-weight: bold;">T.${m.table}</div>
+                    <div style="text-align: right;">${m.white.lastName} (${m.white.elo}) [${m.white.points}]</div>
+                    <div>
+                        <select class="result-select" onchange="setResult(${m.table}, this.value)" ${round.finished ? 'disabled' : ''}>
+                            <option value="">VS</option>
+                            <option value="1-0" ${m.result === '1-0' ? 'selected' : ''}>1-0</option>
+                            <option value="0.5-0.5" ${m.result === '0.5-0.5' ? 'selected' : ''}>0.5-0.5</option>
+                            <option value="0-1" ${m.result === '0-1' ? 'selected' : ''}>0-1</option>
+                        </select>
+                    </div>
+                    <div>[${m.black.points}] ${m.black.lastName} (${m.black.elo})</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function setResult(table, val) {
+            const round = tournament.pairings.find(r => r.round === tournament.currentRound);
+            const match = round.matches.find(m => m.table === table);
+            match.result = val;
+            updateControls();
+        }
+
+        function publishPairings() {
+            const round = tournament.pairings.find(r => r.round === tournament.currentRound);
+            round.published = true;
+            updateControls();
+            alert("Appariements publiés ! N'oubliez pas d'enregistrer le JSON.");
+        }
+
+        function finishRound() {
+            const round = tournament.pairings.find(r => r.round === tournament.currentRound);
+            round.finished = true;
+
+            round.matches.forEach(m => {
+                const w = tournament.players.find(p => p.id === m.white.id);
+                const b = tournament.players.find(p => p.id === m.black.id);
+
+                if (m.result === '1-0') {
+                    if (w) w.points += 1;
+                } else if (m.result === '0-1') {
+                    if (b) b.points += 1;
+                } else if (m.result === '0.5-0.5') {
+                    if (w) w.points += 0.5;
+                    if (b) b.points += 0.5;
+                }
+
+                if (w && b) {
+                    w.opponents.push(b.id);
+                    b.opponents.push(w.id);
+                }
+            });
+
+            renderPairings();
+            updateControls();
+            alert(`Round ${tournament.currentRound} terminé ! Pensez à enregistrer.`);
+        }
+
+        function updateControls() {
+            const round = tournament.pairings.find(r => r.round === tournament.currentRound);
+            const genBtn = document.getElementById('gen-pairings-btn');
+            const pubBtn = document.getElementById('publish-btn');
+            const finBtn = document.getElementById('finish-btn');
+
+            if (!round) {
+                genBtn.style.display = 'block';
+                pubBtn.style.display = 'none';
+                finBtn.style.display = 'none';
+                return;
+            }
+
+            genBtn.style.display = round.finished && tournament.currentRound < tournament.rounds ? 'block' : 'none';
+            pubBtn.style.display = !round.published ? 'block' : 'none';
+            
+            const allSet = round.matches.every(m => m.result !== null);
+            finBtn.style.display = allSet && !round.finished ? 'block' : 'none';
+        }
+
+        loadTournament();
+    </script>
+</body>
+</html>

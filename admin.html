@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Great Chess Madagascar</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-auth, .admin-content {
+            max-width: 600px;
+            margin: 50px auto;
+            background: var(--gold-light);
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px solid var(--gold);
+            color: var(--dark-green);
+        }
+
+        .admin-content { max-width: 900px; display: none; }
+
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
+        input, select { 
+            width: 100%; 
+            padding: 0.8rem; 
+            border: 1px solid var(--gold); 
+            border-radius: 4px;
+            background: var(--white);
+            color: var(--dark-green);
+        }
+
+        .section-placeholder {
+            padding: 2rem;
+            border: 2px dashed var(--gold);
+            text-align: center;
+            margin-top: 1rem;
+            background: rgba(212, 175, 55, 0.1);
+        }
+        
+        .success-msg {
+            color: #2e7d32;
+            background: #c8e6c9;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo-container">
+            <a href="index.html"><img src="logo.jpeg" alt="Great Chess Madagascar Logo"></a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Authentication Section -->
+        <div id="auth-section" class="admin-auth">
+            <h3>Accès Administrateur</h3>
+            <div class="form-group">
+                <label for="admin-password">Mot de passe :</label>
+                <input type="password" id="admin-password" placeholder="Entrez le mot de passe">
+            </div>
+            <button onclick="checkPassword()" class="btn">Se connecter</button>
+            <p id="error-msg" style="color: red; margin-top: 1rem; display: none;">Mot de passe incorrect.</p>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard" class="admin-content">
+            <div style="background: #fff3cd; color: #856404; padding: 1rem; border-radius: 4px; border: 1px solid #ffeeba; margin-bottom: 2rem;">
+                <strong>Note importante :</strong> Comme le site est statique, vos modifications sont temporaires. Après chaque ajout ou suppression, cliquez sur les boutons <strong>"Enregistrer"</strong> ci-dessous pour télécharger les fichiers JSON mis à jour, puis remplacez-les sur votre hébergeur.
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <button onclick="downloadJSON('data1.json', players)" class="btn" style="background: #856404; color: white;">Enregistrer data1.json (Joueurs)</button>
+                    <button onclick="downloadJSON('data2.json', tournaments)" class="btn" style="background: #856404; color: white;">Enregistrer data2.json (Tournois)</button>
+                </div>
+            </div>
+
+            <h2>Tableau de Bord Admin</h2>
+            <div id="success-banner" class="success-msg">Tournoi créé avec succès !</div>
+
+            <section>
+                <h3>Création de tournois</h3>
+                <form id="tournament-form">
+                    <div class="form-group">
+                        <label>Nom du tournoi</label>
+                        <input type="text" id="t-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="t-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="t-type">
+                            <option value="Physique">Physique</option>
+                            <option value="En ligne">En ligne</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cadence</label>
+                        <select id="t-cadence">
+                            <option value="3+2">3+2 (Blitz)</option>
+                            <option value="5+3">5+3 (Blitz)</option>
+                            <option value="10+5">10+5 (Rapide)</option>
+                            <option value="15+10">15+10 (Rapide)</option>
+                            <option value="30+15">30+15 (Classique)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre de rounds</label>
+                        <input type="number" id="t-rounds" value="5" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Lien d'inscription (URL)</label>
+                        <input type="url" id="t-link" placeholder="https://..." required>
+                    </div>
+                    <button type="submit" class="btn">Créer le tournoi</button>
+                </form>
+            </section>
+
+            <section>
+                <h3>Gestion des tournois</h3>
+                <div id="admin-tournament-list" class="tournament-grid" style="margin-top: 1rem;">
+                    <!-- Les tournois seront listés ici -->
+                </div>
+            </section>
+
+            <section>
+                <h3>Modifier la liste de joueurs</h3>
+                <div class="form-group">
+                    <input type="text" id="player-search" placeholder="Rechercher un joueur (Nom, Prénom, Pseudo...)" oninput="filterPlayers()">
+                </div>
+                
+                <form id="player-management-form" class="form-inline" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; align-items: end; margin-bottom: 2rem; background: rgba(212, 175, 55, 0.05); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--gold);">
+                    <div>
+                        <label>Nom</label>
+                        <input type="text" id="p-last-name" required>
+                    </div>
+                    <div>
+                        <label>Prénom</label>
+                        <input type="text" id="p-first-name" required>
+                    </div>
+                    <div>
+                        <label>Pseudo Chess.com</label>
+                        <input type="text" id="p-pseudo" required>
+                    </div>
+                    <div>
+                        <label>ELO</label>
+                        <input type="number" id="p-elo-global" value="1200" required>
+                    </div>
+                    <button type="submit" class="btn">Ajouter le joueur</button>
+                </form>
+
+                <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+                    <button onclick="exportToCSV()" class="btn" style="background-color: #1565c0; color: white;">Exporter en CSV</button>
+                    <label for="csv-import" class="btn" style="background-color: #2e7d32; color: white; cursor: pointer;">Importer un CSV</label>
+                    <input type="file" id="csv-import" accept=".csv" style="display: none;" onchange="importFromCSV(this)">
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; background: var(--white);">
+                        <thead>
+                            <tr style="background: var(--dark-green); color: var(--gold);">
+                                <th style="padding: 0.8rem; border: 1px solid var(--gold); text-align: left;">ID</th>
+                                <th style="padding: 0.8rem; border: 1px solid var(--gold); text-align: left;">Nom</th>
+                                <th style="padding: 0.8rem; border: 1px solid var(--gold); text-align: left;">Prénom</th>
+                                <th style="padding: 0.8rem; border: 1px solid var(--gold); text-align: left;">Pseudo</th>
+                                <th style="padding: 0.8rem; border: 1px solid var(--gold); text-align: left;">ELO</th>
+                                <th style="padding: 0.8rem; border: 1px solid var(--gold); text-align: left;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-player-list">
+                            <!-- Les joueurs seront listés ici -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        let players = [];
+        let tournaments = [];
+
+        async function initData() {
+            try {
+                const resPlayers = await fetch('data1.json');
+                players = await resPlayers.json();
+                const resTourneys = await fetch('data2.json');
+                tournaments = await resTourneys.json();
+            } catch (error) {
+                console.error("Erreur lors de l'initialisation des données:", error);
+            }
+        }
+
+        function downloadJSON(filename, data) {
+            const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        function checkPassword() {
+            const pass = document.getElementById('admin-password').value;
+            if (pass === 'Chess Forever') {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'block';
+                renderAdminTournaments();
+                renderPlayers();
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        // --- Player Management Logic ---
+
+        function generatePlayerId() {
+            return Math.floor(1000000 + Math.random() * 9000000);
+        }
+
+        function renderPlayers(filter = '') {
+            const container = document.getElementById('admin-player-list');
+            container.innerHTML = '';
+            
+            const filteredPlayers = players.filter(p => 
+                p.lastName.toLowerCase().includes(filter.toLowerCase()) ||
+                p.firstName.toLowerCase().includes(filter.toLowerCase()) ||
+                p.pseudo.toLowerCase().includes(filter.toLowerCase()) ||
+                p.id.toString().includes(filter)
+            );
+
+            filteredPlayers.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 0.8rem; border: 1px solid var(--gold);">${p.id}</td>
+                    <td style="padding: 0.8rem; border: 1px solid var(--gold);">${p.lastName}</td>
+                    <td style="padding: 0.8rem; border: 1px solid var(--gold);">${p.firstName}</td>
+                    <td style="padding: 0.8rem; border: 1px solid var(--gold);">${p.pseudo}</td>
+                    <td style="padding: 0.8rem; border: 1px solid var(--gold);">${p.elo}</td>
+                    <td style="padding: 0.8rem; border: 1px solid var(--gold);">
+                        <button onclick="deletePlayer(${p.id})" class="btn" style="background-color: #c62828; color: white; padding: 0.4rem 0.8rem; font-size: 0.8rem;">Supprimer</button>
+                    </td>
+                `;
+                container.appendChild(tr);
+            });
+        }
+
+        function filterPlayers() {
+            const query = document.getElementById('player-search').value;
+            renderPlayers(query);
+        }
+
+        function deletePlayer(id) {
+            if (confirm('Voulez-vous vraiment supprimer ce joueur ?')) {
+                players = players.filter(p => p.id !== id);
+                renderPlayers(document.getElementById('player-search').value);
+            }
+        }
+
+        document.getElementById('player-management-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const player = {
+                id: generatePlayerId(),
+                lastName: document.getElementById('p-last-name').value,
+                firstName: document.getElementById('p-first-name').value,
+                pseudo: document.getElementById('p-pseudo').value,
+                elo: parseInt(document.getElementById('p-elo-global').value)
+            };
+
+            players.push(player);
+            this.reset();
+            renderPlayers(document.getElementById('player-search').value);
+        });
+
+        function exportToCSV() {
+            if (players.length === 0) {
+                alert('Aucun joueur à exporter.');
+                return;
+            }
+
+            let csvContent = "ID,Nom,Prénom,Pseudo,ELO\n";
+            players.forEach(p => {
+                csvContent += `${p.id},"${p.lastName}","${p.firstName}","${p.pseudo}",${p.elo}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "liste_joueurs_gcm.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function importFromCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                const newPlayers = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i].trim() === '') continue;
+                    
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 5) {
+                        newPlayers.push({
+                            id: parseInt(cols[0]),
+                            lastName: cols[1].replace(/"/g, ''),
+                            firstName: cols[2].replace(/"/g, ''),
+                            pseudo: cols[3].replace(/"/g, ''),
+                            elo: parseInt(cols[4])
+                        });
+                    }
+                }
+
+                if (newPlayers.length > 0) {
+                    if (confirm(`Importer ${newPlayers.length} joueurs ? Cela écrasera la liste actuelle (en mémoire).`)) {
+                        players = newPlayers;
+                        renderPlayers();
+                    }
+                } else {
+                    alert('Format CSV invalide ou fichier vide.');
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function renderAdminTournaments() {
+            const container = document.getElementById('admin-tournament-list');
+            
+            if (tournaments.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Aucun tournoi à gérer.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            tournaments.forEach(t => {
+                const card = document.createElement('article');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">${t.name}</div>
+                    <div class="card-body">
+                        <p><strong>Date :</strong> ${t.date}</p>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="moderation.html?id=${t.id}" class="btn" style="flex: 1; text-align: center;">Plus</a>
+                            <button onclick="deleteTournament(${t.id})" class="btn" style="background-color: #c62828; color: white; flex: 1;">Supprimer</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function deleteTournament(id) {
+            if (confirm('Voulez-vous vraiment supprimer ce tournoi ?')) {
+                tournaments = tournaments.filter(t => t.id !== id);
+                renderAdminTournaments();
+            }
+        }
+
+        document.getElementById('tournament-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const tournament = {
+                name: document.getElementById('t-name').value,
+                date: document.getElementById('t-date').value,
+                type: document.getElementById('t-type').value,
+                cadence: document.getElementById('t-cadence').value,
+                rounds: parseInt(document.getElementById('t-rounds').value),
+                link: document.getElementById('t-link').value,
+                id: Date.now(),
+                players: [],
+                pairings: [],
+                currentRound: 0,
+                isPublished: false
+            };
+
+            tournaments.push(tournament);
+            renderAdminTournaments();
+            document.getElementById('success-banner').style.display = 'block';
+            this.reset();
+            setTimeout(() => {
+                document.getElementById('success-banner').style.display = 'none';
+            }, 3000);
+        });
+
+        initData();
+    </script>
+
+    <footer>
+        <p>&copy; 2026 Great Chess Madagascar. Administration.</p>
+    </footer>
+
+</body>
+</html>

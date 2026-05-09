@@ -1,0 +1,168 @@
+:root {
+    --primary-green: #e8f5e9; /* Light green background */
+    --dark-green: #2e7d32; /* Darker green for text/borders */
+    --gold: #d4af37; /* Gold for highlights */
+    --gold-light: #f9f1d7; /* Light gold for card backgrounds */
+    --white: #ffffff;
+    --shadow: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--primary-green);
+    color: var(--dark-green);
+    line-height: 1.6;
+}
+
+/* Navbar */
+nav {
+    background-color: var(--dark-green);
+    display: flex;
+    flex-direction: column; /* Stack logo and links */
+    align-items: center;
+    padding: 0.8rem 5%; /* Reduced padding */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 3px solid var(--gold);
+    box-shadow: 0 4px 10px var(--shadow);
+    gap: 0.5rem; /* Reduced gap */
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-container img {
+    height: 80px; /* Reduced from 150px */
+    border-radius: 8px;
+    border: 2px solid var(--gold);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--white);
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--gold);
+}
+
+/* Main Content */
+main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    min-height: 70vh;
+}
+
+section {
+    margin-bottom: 4rem;
+}
+
+section h3 {
+    font-size: 2rem;
+    color: var(--dark-green);
+    margin-bottom: 2rem;
+    border-left: 5px solid var(--gold);
+    padding-left: 1rem;
+}
+
+/* Tournament Cards */
+.tournament-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.card {
+    background-color: var(--gold-light);
+    color: var(--dark-green);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px var(--shadow);
+    transition: transform 0.3s;
+    border: 1px solid var(--gold);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    height: 100px;
+    background-color: var(--dark-green);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--gold);
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 1rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    background-color: var(--dark-green);
+    color: var(--gold);
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.btn:hover {
+    background-color: var(--gold);
+    color: var(--dark-green);
+}
+
+.btn:active {
+    background-color: #1b5e20; /* Darker green */
+    transform: translateY(1px);
+}
+
+/* Footer */
+footer {
+    background-color: var(--dark-green);
+    padding: 3rem 5%;
+    text-align: center;
+    border-top: 3px solid var(--gold);
+    color: var(--white);
+}
+
+footer p {
+    color: var(--gold-light);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero h2 {
+        font-size: 2rem;
+    }
+    .nav-links {
+        display: none; /* In a real app, implement a burger menu */
+    }
+}

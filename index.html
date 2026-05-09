@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Great Chess Madagascar - Tournois</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>
+        <div class="logo-container">
+            <img src="logo.jpeg" alt="Great Chess Madagascar Logo">
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active">Tournois</a></li>
+            <li><a href="liste.html">Joueurs</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="tournois">
+            <h3>Tournois</h3>
+            <div id="tournament-container" class="tournament-grid">
+                <!-- Les tournois seront ajoutés ici dynamiquement -->
+                <p id="no-tournaments" style="text-align: center; grid-column: 1/-1; padding: 2rem;">Aucun tournoi n'est programmé pour le moment.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        async function loadTournaments() {
+            const container = document.getElementById('tournament-container');
+            const emptyMsg = document.getElementById('no-tournaments');
+            
+            try {
+                const response = await fetch('data2.json');
+                const tournaments = await response.json();
+
+                if (tournaments && tournaments.length > 0) {
+                    emptyMsg.style.display = 'none';
+                    container.innerHTML = '';
+                    
+                    tournaments.forEach(t => {
+                        const card = document.createElement('article');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <div class="card-header">${t.name}</div>
+                            <div class="card-body">
+                                <p><strong>Date :</strong> ${new Date(t.date).toLocaleDateString('fr-FR')}</p>
+                                <p><strong>Type :</strong> ${t.type}</p>
+                                <p><strong>Cadence :</strong> ${t.cadence}</p>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                    <a href="${t.link}" class="btn" target="_blank" style="flex: 1; text-align: center;">S'inscrire</a>
+                                    <a href="details.html?id=${t.id}" class="btn" style="flex: 1; text-align: center; background-color: var(--gold); color: var(--dark-green);">Plus</a>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error("Erreur lors du chargement des tournois:", error);
+                emptyMsg.innerText = "Erreur de chargement des données.";
+            }
+        }
+
+        window.onload = loadTournaments;
+    </script>
+
+    <footer>
+        <p>&copy; 2026 Great Chess Madagascar. Tous droits réservés.</p>
+        <p>Contact : contact@greatchess.mg</p>
+    </footer>
+
+</body>
+</html>
